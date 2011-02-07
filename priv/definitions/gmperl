@@ -2,7 +2,7 @@
 %% ex: ft=erlang ts=4 sw=4 et
 {nifs,
  [{mpz,
-   % {Name, ErlArgs, ErlRetType, CLocals, CRetType, CRetArg}}
+   % {Name, ErlArgs, ErlRetType, CLocals, CRetType, CRetArg, {maj, min, patch}}
    [{mpz_init, [], mpz_t, [new_mpz_t], void, {1, mpz_t}},
     {mpz_set, [mpz_t, mpz_t], ok, [{1, mpz_t}, {2, mpz_t}], void, ok},
     {mpz_set_ui, [mpz_t, non_neg_integer], ok, [{1, mpz_t}, {2, ulong}], void, ok},
@@ -76,7 +76,7 @@
     {mpz_congruent_2exp_p, [mpz_t, mpz_t, non_neg_integer], boolean, [{1, mpz_t}, {2, mpz_t}, {3, ulong}], boolean, {0, boolean}},
     {mpz_powm, [mpz_t, mpz_t, mpz_t, mpz_t], ok, [{1, mpz_t}, {2, mpz_t}, {3, mpz_t}, {4, mpz_t}], void, ok},
     {mpz_powm_ui, [mpz_t, mpz_t, non_neg_integer, mpz_t], ok, [{1, mpz_t}, {2, mpz_t}, {3, ulong}, {4, mpz_t}], void, ok},
-    {mpz_powm_sec, [mpz_t, mpz_t, mpz_t, mpz_t], ok, [{1, mpz_t}, {2, mpz_t}, {3, mpz_t}, {4, mpz_t}], void, ok},
+    {mpz_powm_sec, [mpz_t, mpz_t, mpz_t, mpz_t], ok, [{1, mpz_t}, {2, mpz_t}, {3, mpz_t}, {4, mpz_t}], void, ok, {5, 0, 0}},
     {mpz_pow_ui, [mpz_t, mpz_t, non_neg_integer], ok, [{1, mpz_t}, {2, mpz_t}, {3, ulong}], void, ok},
     {mpz_ui_pow_ui, [mpz_t, non_neg_integer, non_neg_integer], ok, [{1, mpz_t}, {2, ulong}, {3, ulong}], void, ok},
     {mpz_root, [mpz_t, mpz_t, non_neg_integer], boolean, [{1, mpz_t}, {2, mpz_t}, {3, ulong}], boolean, {0, boolean}},

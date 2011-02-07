@@ -116,11 +116,32 @@ GMPERL_NIF_PROTOTYPE(gmperl_info_lib)
 static ErlNifFunc nif_funcs[] =
 {
     {"info_lib",         0, gmperl_info_lib},
-{{#mpz}}
-    {"{{name}}", {{arity}}, gmperl_{{name}}\},{{/mpz}}
-{{#mpq}}
-    {"{{name}}", {{arity}}, gmperl_{{name}}\},{{/mpq}}
-{{#mpf}}
-    {"{{name}}", {{arity}}, gmperl_{{name}}\},{{/mpf}}\};
+{{#mpz}}{{#version}}
+#if _GNU_MP_VERSION >= {{major}}
+#if _GNU_MP_VERSION_MINOR >= {{minor}}
+#if _GNU_MP_VERSION_PATCHLEVEL >= {{patchlevel}}
+{{/version}}{"{{name}}", {{arity}}, gmperl_{{name}}\},{{#version}}
+#endif // _GNU_MP_VERSION >= {{major}}
+#endif // _GNU_MP_VERSION_MINOR >= {{minor}}
+#endif // _GNU_MP_VERSION_PATCHLEVEL >= {{patchlevel}}
+{{/version}}{{/mpz}}
+{{#mpq}}{{#version}}
+#if _GNU_MP_VERSION >= {{major}}
+#if _GNU_MP_VERSION_MINOR >= {{minor}}
+#if _GNU_MP_VERSION_PATCHLEVEL >= {{patchlevel}}
+{{/version}}{"{{name}}", {{arity}}, gmperl_{{name}}\},{{#version}}
+#endif // _GNU_MP_VERSION >= {{major}}
+#endif // _GNU_MP_VERSION_MINOR >= {{minor}}
+#endif // _GNU_MP_VERSION_PATCHLEVEL >= {{patchlevel}}
+{{/version}}{{/mpq}}
+{{#mpf}}{{#version}}
+#if _GNU_MP_VERSION >= {{major}}
+#if _GNU_MP_VERSION_MINOR >= {{minor}}
+#if _GNU_MP_VERSION_PATCHLEVEL >= {{patchlevel}}
+{{/version}}{"{{name}}", {{arity}}, gmperl_{{name}}\},{{#version}}
+#endif // _GNU_MP_VERSION >= {{major}}
+#endif // _GNU_MP_VERSION_MINOR >= {{minor}}
+#endif // _GNU_MP_VERSION_PATCHLEVEL >= {{patchlevel}}
+{{/version}}{{/mpf}}\};
 
 ERL_NIF_INIT(gmperl_nifs, nif_funcs, on_load, on_reload, on_upgrade, on_unload)

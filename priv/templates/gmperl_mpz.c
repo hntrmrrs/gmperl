@@ -1,6 +1,10 @@
 #include "gmperl_nifs.h"
-
-{{#mpz}}GMPERL_NIF_PROTOTYPE(gmperl_{{name}})
+{{#mpz}}
+{{#version}}
+#if _GNU_MP_VERSION >= {{major}}
+#if _GNU_MP_VERSION_MINOR >= {{minor}}
+#if _GNU_MP_VERSION_PATCHLEVEL >= {{patchlevel}}
+{{/version}}GMPERL_NIF_PROTOTYPE(gmperl_{{name}})
 {
     ERL_NIF_TERM ret;
     gmperl_privdata_t *priv = enif_priv_data(env);
@@ -199,6 +203,8 @@
     {{/locals}}
 
     {{#needs_badarg}}return enif_make_badarg(env);{{/needs_badarg}}
-}
-
-{{/mpz}}
+}{{#version}}
+#endif // _GNU_MP_VERSION >= {{major}}
+#endif // _GNU_MP_VERSION_MINOR >= {{minor}}
+#endif // _GNU_MP_VERSION_PATCHLEVEL >= {{patchlevel}}
+{{/version}}{{/mpz}}

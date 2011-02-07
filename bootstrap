@@ -51,7 +51,16 @@ render(Bin, Context) -> (mustache:compile(Bin))(Context).
 get_nif_ctx(Defs) ->
     ?dict:from_list([{A, [get_nif_fun(X) || X <- Fs]} || {A, Fs} <- Defs]).
 
+get_nif_fun({Name, Args, RetType, CArgs, CRetType, CRet, {Maj, Min, Pat}}) ->
+    L = get_nif_list({Name, Args, RetType, CArgs, CRetType, CRet}),
+    V = [{major, Maj}, {minor, Min}, {patchlevel, Pat}],
+    L1 = L ++ [{version, [?dict:from_list(V)]}],
+    ?dict:from_list(L1);
 get_nif_fun({Name, Args, RetType, CArgs, CRetType, CRet}) ->
+    L = get_nif_list({Name, Args, RetType, CArgs, CRetType, CRet}),
+    ?dict:from_list(L).
+
+get_nif_list({Name, Args, RetType, CArgs, CRetType, CRet}) ->
     L = [{name, Name},
          {ret_type, tname(RetType)},
          {needs_badarg, needs_badarg(CArgs)},
@@ -59,13 +68,12 @@ get_nif_fun({Name, Args, RetType, CArgs, CRetType, CRet}) ->
          {call, call(CRetType, CArgs)},
          {return, return(CRet)},
          {arity, length(Args)}],
-    L1 = L ++ case Args of
-                  []    -> [];
-                  [H|T] ->
-                      [{head_arg, erl_args([H])},
-                       {tail_args, erl_args(T)}]
-              end,
-    ?dict:from_list(L1).
+    L ++ case Args of
+             []    -> [];
+             [H|T] ->
+                 [{head_arg, erl_args([H])},
+                  {tail_args, erl_args(T)}]
+         end.
 
 maybe_empty(true)  -> [?dict:new()];
 maybe_empty(false) -> [].
