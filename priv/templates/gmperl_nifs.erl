@@ -70,4 +70,14 @@ mpz_test() ->
     ?assertEqual("1500", mpz_get_str(Ref1, 10)),
     _Ref2 = mpz_init_set(Ref1).
 
+mpz_add_test() ->
+    Ref0 = mpz_init_set_str("1500", 10),
+    Ref1 = mpz_init_set_str("22", 10),
+    Ref2 = mpz_init(),
+    ok = mpz_add(Ref2, Ref0, Ref1),
+    ?assertEqual(1522, mpz_get_ui(Ref2)),
+    ok = mpz_set_str(Ref0, "-1000", 10),
+    ok = mpz_add(Ref2, Ref0, Ref1),
+    ?assertEqual(-978, mpz_get_si(Ref2)).
+
 -endif.
