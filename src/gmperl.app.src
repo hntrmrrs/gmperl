@@ -1,0 +1,7 @@
+{application, gmperl,
+ [{description, "GMP library NIFs"},
+  {vsn, "0.1"},
+  {registered, []},
+  {applications, [kernel, stdlib]},
+  {modules, [gmperl_nifs]},
+  {env, []}]}.
