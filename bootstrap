@@ -15,6 +15,8 @@ main(Args) ->
             true  -> [debug_info];
             false -> []
         end,
+    io:format("~s~n", [os:cmd("./rebar get-deps")]),
+    io:format("~s~n", [os:cmd("./rebar compile")]),
     case make:files(filelib:wildcard("src/mustache.erl"),
                     [{outdir, "ebin"}, {i, "include"}] ++ DebugList) of
         up_to_date -> ok;
