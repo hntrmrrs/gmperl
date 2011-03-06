@@ -5,19 +5,22 @@
 static void
 gmperl_mpz_t_dtor(ErlNifEnv *env, void *obj)
 {
-    mpz_clear(((gmperl_mpz_t *)obj)->z);
+    gmperl_mpz_t *o = (gmperl_mpz_t *)obj;
+    if (o->init) mpz_clear(o->z);
 }
 
 static void
 gmperl_mpq_t_dtor(ErlNifEnv *env, void *obj)
 {
-    mpq_clear(((gmperl_mpq_t *)obj)->q);
+    gmperl_mpq_t *o = (gmperl_mpq_t *)obj;
+    if (o->init) mpq_clear(o->q);
 }
 
 static void
 gmperl_mpf_t_dtor(ErlNifEnv *env, void *obj)
 {
-    mpf_clear(((gmperl_mpf_t *)obj)->f);
+    gmperl_mpf_t *o = (gmperl_mpf_t *)obj;
+    if (o->init) mpf_clear(o->f);
 }
 
 static void *

@@ -36,6 +36,10 @@
 
     ;
 
+    {{#new_mpz_t}}val{{index}}->init = 0;{{/new_mpz_t}}
+    {{#new_mpq_t}}val{{index}}->init = 0;{{/new_mpq_t}}
+    {{#new_mpf_t}}val{{index}}->init = 0;{{/new_mpf_t}}
+
     {{#mpz_t}}
     if (!enif_get_resource(env, argv[{{in_index}}], priv->gmperl_mpz_rt, (void**)&val{{index}})) {
         goto badarg;
@@ -121,6 +125,10 @@
     {{name}}({{#head}}{{#reference}}&{{/reference}}val{{index}}{{#pointer}}->{{target}}{{/pointer}}{{/head}}{{#tail}}, {{#reference}}&{{/reference}}val{{index}}{{#pointer}}->{{target}}{{/pointer}}{{/tail}});
 
     {{#retval}}{{#assert_zero}}if (0 != val0) { goto badarg; }{{/assert_zero}}{{/retval}}
+
+    {{#head}}{{#pointer}}val{{index}}->init = 1;{{/pointer}}{{/head}}
+    {{#tail}}{{#pointer}}val{{index}}->init = 1;{{/pointer}}{{/tail}}
+
     {{/call}}
 
     {{#return}}

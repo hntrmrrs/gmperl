@@ -6,15 +6,18 @@
 
 typedef struct {
     mpz_t z;
+    int   init;
 } gmperl_mpz_t;
 
 typedef struct {
     mpq_t q;
+    int   init;
 } gmperl_mpq_t;
 
 typedef struct {
     mpf_t f;
     unsigned int rebits;
+    int init;
 } gmperl_mpf_t;
 
 typedef struct {
