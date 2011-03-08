@@ -7,12 +7,9 @@
 
 -export([info_lib/0]).
 
-{{#mpz}}-export([{{name}}/{{arity}}]).
-{{/mpz}}
-{{#mpq}}-export([{{name}}/{{arity}}]).
-{{/mpq}}
-{{#mpf}}-export([{{name}}/{{arity}}]).
-{{/mpf}}
+{% for f in mpz %}{% include "priv/templates/export.erl" %}{% endfor %}
+{% for f in mpq %}{% include "priv/templates/export.erl" %}{% endfor %}
+{% for f in mpf %}{% include "priv/templates/export.erl" %}{% endfor %}
 -define(ERR, nif_stub_error(?LINE)).
 -define(ERR(Line), erlang:nif_error({nif_not_loaded, module, ?MODULE, line, Line})).
 
@@ -31,12 +28,9 @@
 
 -spec info_lib() -> [{binary(), binary()}].
 
-{{#mpz}}-spec {{name}}({{#head_arg}}{{type}}{{/head_arg}}{{#tail_args}}, {{type}}{{/tail_args}}) -> {{ret_type}}.
-{{/mpz}}
-{{#mpq}}-spec {{name}}({{#head_arg}}{{type}}{{/head_arg}}{{#tail_args}}, {{type}}{{/tail_args}}) -> {{ret_type}}.
-{{/mpq}}
-{{#mpf}}-spec {{name}}({{#head_arg}}{{type}}{{/head_arg}}{{#tail_args}}, {{type}}{{/tail_args}}) -> {{ret_type}}.
-{{/mpf}}
+{% for f in mpz %}{% include "priv/templates/spec.erl" %}{% endfor %}
+{% for f in mpq %}{% include "priv/templates/spec.erl" %}{% endfor %}
+{% for f in mpf %}{% include "priv/templates/spec.erl" %}{% endfor %}
 init() ->
     Dir = case code:priv_dir(gmperl) of
               {error, bad_name} -> "../priv";
@@ -48,12 +42,9 @@ nif_stub_error(Line) -> erlang:nif_error({nif_not_loaded,module,?MODULE,line,Lin
 
 info_lib() -> ?ERR.
 
-{{#mpz}}{{name}}({{#head_arg}}_{{/head_arg}}{{#tail_args}}, _{{/tail_args}}) -> ?ERR.
-{{/mpz}}
-{{#mpq}}{{name}}({{#head_arg}}_{{/head_arg}}{{#tail_args}}, _{{/tail_args}}) -> ?ERR.
-{{/mpq}}
-{{#mpf}}{{name}}({{#head_arg}}_{{/head_arg}}{{#tail_args}}, _{{/tail_args}}) -> ?ERR.
-{{/mpf}}
+{% for f in mpz %}{% include "priv/templates/nif.erl" %}{% endfor %}
+{% for f in mpq %}{% include "priv/templates/nif.erl" %}{% endfor %}
+{% for f in mpf %}{% include "priv/templates/nif.erl" %}{% endfor %}
 -ifdef(TEST).
 
 mpq_str_test() ->

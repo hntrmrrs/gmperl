@@ -2,29 +2,12 @@
 %% -*- mode: erlang;erlang-indent-level: 4;indent-tabs-mode: nil -*-
 %% ex: ft=erlang ts=4 sw=4 et
 
--define(dict, dict).
--define(TYPES,  [long, ulong, double, string, num_base, mpz_t, mpq_t, mpf_t,
-                 long_out, ulong_out, double_out, char_ptr, int, uint,
-                 int_out, uint_out]).
--define(ALLOCS, [new_mpz_t, new_mpq_t, new_mpf_t]).
-
-main(Args) ->
+main(_Args) ->
     io:format("==> gmperl (generate)~n"),
-    DebugList =
-        case lists:member("debug", Args) of
-            true  -> [debug_info];
-            false -> []
-        end,
     io:format("~s~n", [os:cmd("./rebar get-deps")]),
     io:format("~s~n", [os:cmd("./rebar compile")]),
-    case make:files(filelib:wildcard("src/mustache.erl"),
-                    [{outdir, "ebin"}, {i, "include"}] ++ DebugList) of
-        up_to_date -> ok;
-        error      ->
-            io:format("Failed to compile core files!~n"),
-            halt(1)
-    end,
     true = code:add_path("ebin"),
+    true = code:add_path("deps/erlydtl/ebin"),
     Defs = case file:consult("priv/definitions/gmperl") of
                {ok, Terms}     -> Terms;
                {error, Reason} ->
@@ -42,103 +25,138 @@ main(Args) ->
                         Target = atom_to_list(Dir) ++ "/" ++ Template,
                         io:format("Generating ~s~n", [Target]),
                         {ok, Tpl} = file:read_file("priv/templates/" ++ Template),
-                        ok = file:write_file(Target, render(Tpl, Ctx))
+                        ok = file:write_file(Target, render(Template, Tpl, Ctx))
                 end, Files)
       end, Templates),
     io:format("~s~n", [os:cmd("./rebar compile")]),
     0.
 
-render(Bin, Context) -> (mustache:compile(Bin))(Context).
+render(ModuleName, Bin, Context) ->
+    Mod = list_to_atom(binary_to_list(iolist_to_binary(re:replace(ModuleName, "\\.", "_")))),
+    {ok, Mod} = erlydtl:compile(Bin, Mod),
+    {ok, Val} = Mod:render(Context),
+    Val.
 
-get_nif_ctx(Defs) ->
-    ?dict:from_list([{A, [get_nif_fun(X) || X <- Fs]} || {A, Fs} <- Defs]).
+get_nif_ctx(Defs) -> [{A, [get_nif_fun(X) || X <- Fs]} || {A, Fs} <- Defs].
 
-get_nif_fun({Name, Args, RetType, CArgs, CRetType, CRet, {Maj, Min, Pat}}) ->
-    L = get_nif_list({Name, Args, RetType, CArgs, CRetType, CRet}),
-    V = [{major, Maj}, {minor, Min}, {patchlevel, Pat}],
-    L1 = L ++ [{version, [?dict:from_list(V)]}],
-    ?dict:from_list(L1);
-get_nif_fun({Name, Args, RetType, CArgs, CRetType, CRet}) ->
-    L = get_nif_list({Name, Args, RetType, CArgs, CRetType, CRet}),
-    ?dict:from_list(L).
+get_nif_fun(Vars) -> get_nif_fun_ver(Vars) ++ get_nif_list(Vars).
 
-get_nif_list({Name, Args, RetType, CArgs, CRetType, CRet}) ->
-    L = [{name, Name},
-         {ret_type, tname(RetType)},
-         {needs_badarg, needs_badarg(CArgs)},
-         {locals, locals(CArgs)},
-         {call, call(CRetType, CArgs)},
-         {return, return(CRet)},
-         {arity, length(Args)}],
-    L ++ case Args of
-             []    -> [];
-             [H|T] ->
-                 [{head_arg, erl_args([H])},
-                  {tail_args, erl_args(T)}]
-         end.
+get_nif_fun_ver({_, _, _, _, _, _, {Maj, Min, Pat}}) ->
+    [{version, [{major, Maj}, {minor, Min}, {patchlevel, Pat}]}];
+get_nif_fun_ver(_) -> [].
 
-maybe_empty(true)  -> [?dict:new()];
-maybe_empty(false) -> [].
-
-maybe_dict([]) -> [];
-maybe_dict(L)  -> [?dict:from_list(L)].
-
-empty_pair(X) -> {X, maybe_empty(true)}.
-
-type_decl(Type) -> [{X, maybe_empty(X =:= Type)} || X <- ?TYPES ++ ?ALLOCS].
-
-local({{In, Type}, I}) ->
-    L = type_decl(Type),
-    L ++ [{index, I}, {in_index, In - 1}];
-local({Type, I}) ->
-    L = type_decl(Type),
-    L ++ [{index, I}, {dealloc, maybe_empty(lists:member(Type, ?ALLOCS))}].
-
-needs_badarg(L) -> maybe_empty(lists:any(fun({_, _}) -> true; (_) -> false end, L)).
-locals(CArgs) -> [?dict:from_list(local(L)) || L <- seqzip(CArgs)].
-
-seqzip(L) -> lists:zip(L, lists:seq(1, length(L))).
-
-call(RetType, Args) ->
-    L = case seqzip(Args) of
-            []    -> [];
-            [H|T] ->
-                [{head, c_args([H])},
-                 {tail, c_args(T)}]
+get_nif_list(Vars) ->
+    {Name, Args, RetType, CArgs, CRetType, CRet} =
+        case Vars of
+            {A, B, C, D, E, F, _} -> {A, B, C, D, E, F};
+            {A, B, C, D, E, F} -> {A, B, C, D, E, F}
         end,
-    Rl = case RetType of
-             void        -> [];
-             assert_zero -> [empty_pair(assert_zero)];
-             boolean     -> [empty_pair(boolean)];
-             _           -> [empty_pair(RetType)]
-         end,
-    L1 = [{retval, maybe_dict(Rl)}|L],
-    [?dict:from_list(L1)].
+    [{name, Name},
+     {ret_type, tname(RetType)},
+     {return, return(CRet)},
+     {ccall, call(CRetType, CArgs)},
+     {locals, locals(CArgs)},
+     {arity, length(Args)}] ++
+        case Args of
+            []    -> [];
+            [H]   -> [head_arg(H)];
+            [H|T] -> [head_arg(H), {tail_args, erl_args(T)}]
+        end ++
+        case needs_badarg(CArgs) of
+            true  -> [{needs_badarg, true}];
+            false -> []
+        end.
 
-return(Ret) -> [?dict:from_list(return1(Ret))].
-return1(ok) -> [empty_pair(ok)];
-return1({I, T}) -> [{index, I}, empty_pair(T)];
-return1([{I, T}, {I2, T2}]) ->
-    [{tuple2, [?dict:from_list([{first, return({I, T})}, {second, return({I2, T2})}])]}];
-return1(X) ->
+return(ok) -> [{type, ok}];
+return({I, T}) -> [{type, T}, {index, I}];
+return([{I, T}, {I2, T2}]) ->
+    [{tuple2, [{first, return({I, T})}, {second, return({I2, T2})}]}];
+return(X) ->
     io:format(standard_error, "Warning: Return type ~p not"
               " supported!~n", [X]),
     [].
 
-c_args(L) -> [?dict:from_list([{index, I}, {pointer, c_ptr(X)}, {reference, c_ref(X)}]) || {X, I} <- L].
+needs_badarg(L) -> lists:any(fun({_, _}) -> true; (_) -> false end, L).
 
-c_ref(A) -> maybe_empty(lists:member(A, [double_out, long_out, uint_out, int_out])).
+head_arg(H) -> {head_arg, [{type, tname(H)}]}.
 
-c_ptr(new_mpz_t)  -> [?dict:from_list([{target, "z"}])];
-c_ptr({_, mpz_t}) -> [?dict:from_list([{target, "z"}])];
-c_ptr(new_mpq_t)  -> [?dict:from_list([{target, "q"}])];
-c_ptr({_, mpq_t}) -> [?dict:from_list([{target, "q"}])];
-c_ptr(new_mpf_t)  -> [?dict:from_list([{target, "f"}])];
-c_ptr({_, mpf_t}) -> [?dict:from_list([{target, "f"}])];
-c_ptr(_)          -> maybe_empty(false).
+local({{In, Type}, I}) ->
+    [{type, Type}, {index, I}, {in_index, In - 1}, {ctype, ctype(Type)}];
+local({Type, I}) ->
+    [{type, Type}, {index, I}, {ctype, ctype(Type)}] ++
+        case lists:member(Type, [new_mpz_t, new_mpq_t, new_mpf_t]) of
+            true  -> [{dealloc, true}];
+            false -> []
+        end.
 
-tname(ok) -> "ok";
-tname({A, B}) -> "{" ++ tname(A) ++ ", " ++ tname(B) ++ "}";
-tname(A)  -> atom_to_list(A) ++ "()".
+locals(CArgs) -> [local(L) || L <- seqzip(CArgs)].
 
-erl_args(L) -> [?dict:from_list([{type, tname(X)}]) || X <- L].
+seqzip(L) -> lists:zip(L, lists:seq(1, length(L))).
+
+call(RetType, Args) ->
+    case seqzip(Args) of
+            []    -> [];
+            [H]   -> [{head, head_c_arg(H)}];
+            [H|T] ->
+                [{head, head_c_arg(H)},
+                 {tail, [head_c_arg(A) || A <- T]}]
+    end ++
+        case RetType of
+            void        -> [];
+            _ -> [{retval, RetType},
+                  {cretval, cretval(RetType)}]
+        end.
+
+head_c_arg({X, I}) ->
+    [{type, X},
+     {ctype, ctype(X)},
+     {index, I}] ++
+        case c_ptr(X) of
+            []   -> [];
+            CPtr -> [{pointer, CPtr}]
+        end ++
+        case c_ref(X) of
+            []   -> [];
+            CRef -> [{reference, CRef}]
+        end.
+
+c_ref(double_out) -> true;
+c_ref(long_out)   -> true;
+c_ref(uint_out)   -> true;
+c_ref(int_out)    -> true;
+c_ref(_)          -> [].
+
+c_ptr(new_mpz_t)  -> [{target, "z"}];
+c_ptr({_, mpz_t}) -> [{target, "z"}];
+c_ptr(new_mpq_t)  -> [{target, "q"}];
+c_ptr({_, mpq_t}) -> [{target, "q"}];
+c_ptr(new_mpf_t)  -> [{target, "f"}];
+c_ptr({_, mpf_t}) -> [{target, "f"}];
+c_ptr(_)          -> [].
+
+tname(ok)     -> ok;
+tname({A, B}) -> io_lib:format("{~s, ~s}", [tname(A), tname(B)]);
+tname(A)      -> atom_to_list(A) ++ "()".
+
+erl_args(L) -> [[{type, tname(X)}] || X <- L].
+
+ctype(uint) -> "unsigned int";
+ctype(int_out) -> "int";
+ctype(uint_out) -> "unsigned int";
+ctype(long_out) -> "long";
+ctype(ulong) -> "unsigned long";
+ctype(string) -> "char";
+ctype(num_base) -> "unsigned";
+ctype(mpz_t) -> "gmperl_mpz_t *";
+ctype(mpq_t) -> "gmperl_mpq_t *";
+ctype(mpf_t) -> "gmperl_mpf_t *";
+ctype(new_mpz_t) -> "gmperl_mpz_t *";
+ctype(new_mpq_t) -> "gmperl_mpq_t *";
+ctype(new_mpf_t) -> "gmperl_mpf_t *";
+ctype(char_ptr) -> "char *";
+ctype(X) -> X.
+
+cretval(string) -> "char *";
+cretval(assert_zero) -> "int";
+cretval(boolean) -> "int";
+cretval(X) -> ctype(X).

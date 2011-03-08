@@ -33,6 +33,7 @@ ERL_NIF_TERM enif_get_boolean(ErlNifEnv *env, int n);
 ERL_NIF_TERM enif_get_ok(ErlNifEnv *env);
 
 #define GMPERL_NIF_PROTOTYPE(F) ERL_NIF_TERM F(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+#define BUF_SZ 4096
 
 #include "gmperl_mpz.h"
 #include "gmperl_mpq.h"

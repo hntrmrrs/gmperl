@@ -3,13 +3,5 @@
 
 #include "gmperl_nifs.h"
 
-{{#mpz}}{{#version}}
-#if _GNU_MP_VERSION >= {{major}}
-#if _GNU_MP_VERSION_MINOR >= {{minor}}
-#if _GNU_MP_VERSION_PATCHLEVEL >= {{patchlevel}}
-{{/version}}GMPERL_NIF_PROTOTYPE(gmperl_{{name}});{{#version}}
-#endif // _GNU_MP_VERSION >= {{major}}
-#endif // _GNU_MP_VERSION_MINOR >= {{minor}}
-#endif // _GNU_MP_VERSION_PATCHLEVEL >= {{patchlevel}}
-{{/version}}{{/mpz}}
+{% for f in mpz %}{% include "priv/templates/fun.h" %}{% endfor %}
 #endif // GMPERL_MPZ_H
