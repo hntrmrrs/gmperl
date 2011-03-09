@@ -65,7 +65,22 @@ get_nif_list(Vars) ->
         case needs_badarg(CArgs) of
             true  -> [{needs_badarg, true}];
             false -> []
+        end ++
+        case needs_priv(CArgs) of
+            true  -> [{needs_priv, true}];
+            false -> []
         end.
+
+needs_priv(L) ->
+    lists:any(
+      fun({_, mpf_t}) -> true;
+         ({_, mpq_t}) -> true;
+         ({_, mpz_t}) -> true;
+         (new_mpz_t)  -> true;
+         (new_mpq_t)  -> true;
+         (new_mpf_t)  -> true;
+         (_)          -> false
+      end, L).
 
 return(ok) -> [{type, ok}];
 return({I, T}) -> [{type, T}, {index, I}];

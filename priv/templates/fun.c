@@ -5,7 +5,7 @@
 GMPERL_NIF_PROTOTYPE(gmperl_{{ f.name }})
 {
     ERL_NIF_TERM ret;
-    gmperl_privdata_t *priv = enif_priv_data(env);
+    {% if f.needs_priv %}gmperl_privdata_t *priv = enif_priv_data(env);{% endif %}
     {% for l in f.locals %}
     {{ l.ctype }} val{{ l.index }}
     {% ifequal l.type "string" %}[BUF_SZ]{% endifequal %}
