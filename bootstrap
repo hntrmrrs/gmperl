@@ -4,8 +4,7 @@
 
 main(_Args) ->
     io:format("==> gmperl (generate)~n"),
-    io:format("~s~n", [os:cmd("./rebar get-deps")]),
-    io:format("~s~n", [os:cmd("./rebar compile")]),
+    io:format("~s~n", [os:cmd("./rebar get-deps compile")]),
     true = code:add_path("ebin"),
     true = code:add_path("deps/erlydtl/ebin"),
     Defs = case file:consult("priv/definitions/gmperl") of
@@ -28,7 +27,7 @@ main(_Args) ->
                         ok = file:write_file(Target, render(Template, Tpl, Ctx))
                 end, Files)
       end, Templates),
-    io:format("~s~n", [os:cmd("./rebar compile")]),
+    io:format("~s~n", [os:cmd("./rebar compile eunit")]),
     0.
 
 render(ModuleName, Bin, Context) ->
